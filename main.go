@@ -229,16 +229,44 @@ func printTable(results []Result) {
 		fmt.Println("no local AI services found on known ports")
 		return
 	}
-	fmt.Printf("%-6s %-28s %-10s %-8s %-9s %s\n", "PORT", "SERVICE", "LISTEN", "REBIND", "AUTH", "VERDICT")
+	rows := [][]string{{"PORT", "SERVICE", "LISTEN", "REBIND", "AUTH", "VERDICT"}}
 	for _, r := range results {
-		listen := "loopback"
+		listen, verdict := "loopback", "ok"
 		if r.AllIfaces {
 			listen = "ALL"
 		}
-		verdict := "ok"
 		if r.Red {
 			verdict = "RED"
 		}
-		fmt.Printf("%-6d %-28s %-10s %-8s %-9s %s\n", r.Port, r.Service, listen, r.Rebind, r.Auth, verdict)
+		rows = append(rows, []string{strconv.Itoa(r.Port), r.Service, listen, r.Rebind, r.Auth, verdict})
+	}
+	// Columns are sized to their content. If that still does not fit the
+	// terminal, print one record per port instead of a wrapped table.
+	widths := make([]int, len(rows[0]))
+	total := 0
+	for _, row := range rows {
+		for i, cell := range row {
+			if len(cell) > widths[i] {
+				widths[i] = len(cell)
+			}
+		}
+	}
+	for _, w := range widths {
+		total += w + 2
+	}
+	if total > termWidth() {
+		for _, row := range rows[1:] {
+			fmt.Printf("%s  %s  %s\n  listen=%s rebind=%s auth=%s\n", row[0], row[1], row[5], row[2], row[3], row[4])
+		}
+		return
+	}
+	for _, row := range rows {
+		for i, cell := range row {
+			if i == len(row)-1 {
+				fmt.Println(cell)
+				break
+			}
+			fmt.Printf("%-*s  ", widths[i], cell)
+		}
 	}
 }
