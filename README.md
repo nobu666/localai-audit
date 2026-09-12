@@ -53,7 +53,7 @@ For each open port it then sends two GETs to the service's API path: one plain, 
 ## What it does not do
 
 - It does not look at the host firewall. Connecting to your own LAN address goes through the loopback route, so `ufw` or the macOS application firewall never sees it. `LISTEN ALL` means the socket is bound to all interfaces, not that a neighbour can definitely reach it.
-- It confirms a service by its response only where the response shape is known (Ollama, llama.cpp, KoboldCpp, ComfyUI, SD WebUI, Chroma, Qdrant, Weaviate), and only when that endpoint answers without credentials. Anything else is listed by port with a `?` after the candidate names (8080: `llama.cpp / LocalAI / Open WebUI / Weaviate?`). The verdict does not depend on which one it is.
+- It confirms a service by its response only where the response shape is known (Ollama, LM Studio, llama.cpp, LocalAI, KoboldCpp, Open WebUI, ComfyUI, SD WebUI, Jupyter, Chroma, Qdrant, Weaviate), and only when that endpoint answers without credentials. Anything else is listed by port with a `?` after the candidate names (8080: `llama.cpp / LocalAI / Open WebUI / Weaviate?`). The verdict does not depend on which one it is.
 - It does not send any request that changes state. Two GETs per port, nothing else.
 
 ## Verified against real services
@@ -65,8 +65,12 @@ For each open port it then sends two GETs to the service's API path: one plain, 
 | Chroma | `docker run -p 8000:8000 chromadb/chroma` | identified by `/api/v2/heartbeat`; `ALL / open / none / RED` |
 | Weaviate | `docker run -p 8080:8080 semitechnologies/weaviate` | identified by `/v1/meta`; `ALL / open / none / RED` |
 | llama.cpp | `docker run -p 8080:8080 ghcr.io/ggml-org/llama.cpp:server` | identified by `/props`; `ALL / open / none / RED` |
+| LM Studio 0.4.24 | app on this Mac, server on 1234 | identified by `/api/v0/models`; `loopback / open / none / RED`. Loopback only, but it accepts a foreign `Host`, so a DNS-rebinding page reaches it |
+| Open WebUI 0.11.3 | `docker run -p 3000:8080 ghcr.io/open-webui/open-webui:main` | identified by `/api/config`; `ALL / n/a / required / RED` |
+| Jupyter Server 2.21 | `docker run -p 8888:8888 quay.io/jupyter/base-notebook` | identified by `/login`; `ALL / n/a / required / RED` (token auth) |
+| LocalAI 3.0.0 | `docker run -p 8080:8080 localai/localai:latest-cpu` | identified by `/`; `ALL / open / none / RED` |
 
-The other services in the table are probed by the paths their docs describe but have not been run here yet.
+Not run here: vLLM (no CPU build for Apple Silicon), ComfyUI and SD WebUI (PyTorch images are impractical on CPU), Jan (desktop app), KoboldCpp (no arm64 image). Those are probed by the paths their docs describe; KoboldCpp, ComfyUI and SD WebUI have signatures taken from source, the rest show as candidates with `?`.
 
 ## Known false positives
 
