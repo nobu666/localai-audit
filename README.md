@@ -9,11 +9,11 @@ No root, no `lsof`, no dependencies. One static binary.
 
 ```
 $ localai-audit
-PORT   SERVICE                      LISTEN     REBIND   AUTH      VERDICT
-11434  Ollama                       loopback   blocked  none      ok
+PORT   SERVICE  LISTEN    REBIND   AUTH  VERDICT
+11434  Ollama   loopback  blocked  none  ok
 ```
 
-Exit code is `1` when any row is `RED`, so it works in a cron job or CI.
+Exit code is `1` when any row is `RED`, so it works in a cron job or CI. Columns are sized to their content; on a terminal too narrow for the table it prints one record per port instead.
 
 ## Install
 
