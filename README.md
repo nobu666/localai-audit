@@ -21,6 +21,16 @@ Exit code is `1` when any row is `RED`, so it works in a cron job or CI. Columns
 go install github.com/nobu666/localai-audit@latest
 ```
 
+Or download a binary for macOS, Linux or Windows from [Releases](https://github.com/nobu666/localai-audit/releases).
+
+## Flags
+
+| Flag | Meaning |
+|---|---|
+| `--ports 1234,9999` | Extra ports to check |
+| `--ignore 5000,7000` | Ports whose RED you have looked at and accepted. Still shown, marked `(ignored)`, not counted in the exit code. Use it to keep a cron job green past a known listener such as AirPlay |
+| `--json` | Print everything, including every address that accepted a connection and the raw status codes |
+
 ## What it does
 
 For every known port (plus any you pass with `--ports`), it tries to connect on `127.0.0.1`, `::1`, and every non-loopback address of the host. A port that answers on a non-loopback address is bound to all interfaces.
@@ -33,8 +43,6 @@ For each open port it then sends two GETs to the service's API path: one plain, 
 | `REBIND` | `blocked`: plain 2xx, spoofed 4xx. `open`: spoofed 2xx/3xx, a rebinding page gets through. `n/a`: the service requires auth, so the Host check cannot be told apart. `?`: not HTTP, or unexpected status |
 | `AUTH` | `none`: the API answered 2xx with no credentials. `required`: 401/403 |
 | `VERDICT` | `RED` when `LISTEN` is `ALL` or `REBIND` is `open`. Either one is a separate attack path |
-
-`--json` prints the same data, including every address that accepted a connection and the raw status codes.
 
 ## What it does not do
 
