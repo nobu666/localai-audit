@@ -34,7 +34,8 @@ type Result struct {
 	Rebind    string   `json:"rebind"` // open | blocked | n/a | ?
 	Auth      string   `json:"auth"`   // none | required | ?
 	Red       bool     `json:"red"`
-	Ignored   bool     `json:"ignored"` // listed with --ignore: reported, not counted
+	Ignored   bool     `json:"ignored"`   // listed with --ignore: reported, not counted
+	Confirmed bool     `json:"confirmed"` // service identified by its response, not just the port
 }
 
 func main() {
@@ -145,9 +146,14 @@ func audit(ports []int, addrs []string) []Result {
 		for _, c := range cands {
 			names = append(names, c.Name)
 		}
+		if hits := identify(listen[0], port, cands); len(hits) > 0 {
+			names, r.Confirmed = hits, true
+		}
 		r.Service = strings.Join(names, " / ")
 		if r.Service == "" {
 			r.Service = "(unknown)"
+		} else if !r.Confirmed && len(cands) > 0 {
+			r.Service += "?"
 		}
 		// Probe loopback and, when bound to all interfaces, the first
 		// non-loopback address too: a service may check Host on one

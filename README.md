@@ -53,10 +53,24 @@ For each open port it then sends two GETs to the service's API path: one plain, 
 ## What it does not do
 
 - It does not look at the host firewall. Connecting to your own LAN address goes through the loopback route, so `ufw` or the macOS application firewall never sees it. `LISTEN ALL` means the socket is bound to all interfaces, not that a neighbour can definitely reach it.
-- It does not identify services by response body. Ports shared by several tools (8080: llama.cpp / LocalAI / Open WebUI / Weaviate) list all candidates. The verdict does not depend on which one it is.
+- It confirms a service by its response only where the response shape is known (Ollama, llama.cpp, KoboldCpp, ComfyUI, SD WebUI, Chroma, Qdrant, Weaviate), and only when that endpoint answers without credentials. Anything else is listed by port with a `?` after the candidate names (8080: `llama.cpp / LocalAI / Open WebUI / Weaviate?`). The verdict does not depend on which one it is.
 - It does not send any request that changes state. Two GETs per port, nothing else.
 
+## Verified against real services
+
+| Service | How | Result (2026-09-12) |
+|---|---|---|
+| Ollama 0.33 | Homebrew service on this Mac | `loopback / blocked / none / ok`; with `OLLAMA_HOST=0.0.0.0` `ALL / open / none / RED` |
+| Qdrant | `docker run -p 6333:6333 qdrant/qdrant` | identified by `/`; `ALL / open / none / RED` |
+| Chroma | `docker run -p 8000:8000 chromadb/chroma` | identified by `/api/v2/heartbeat`; `ALL / open / none / RED` |
+| Weaviate | `docker run -p 8080:8080 semitechnologies/weaviate` | identified by `/v1/meta`; `ALL / open / none / RED` |
+| llama.cpp | `docker run -p 8080:8080 ghcr.io/ggml-org/llama.cpp:server` | identified by `/props`; `ALL / open / none / RED` |
+
+The other services in the table are probed by the paths their docs describe but have not been run here yet.
+
 ## Known false positives
+
+- **Docker-published ports**: `docker run -p 8080:8080` publishes on `0.0.0.0`, so a container shows `ALL` even when the service inside binds to localhost. That is a real exposure of the port, not a mistake of the tool. Publish with `-p 127.0.0.1:8080:8080` to keep it on loopback.
 
 - **macOS port 5000 and 7000**: AirPlay Receiver (`ControlCenter`) listens on `*:5000`. It shows up as `ALL / n/a / required / RED`. Turn it off in System Settings > General > AirDrop & Handoff, or ignore the row.
 
