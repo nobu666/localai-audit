@@ -34,10 +34,12 @@ type Result struct {
 	Rebind    string   `json:"rebind"` // open | blocked | n/a | ?
 	Auth      string   `json:"auth"`   // none | required | ?
 	Red       bool     `json:"red"`
+	Ignored   bool     `json:"ignored"` // listed with --ignore: reported, not counted
 }
 
 func main() {
 	extra := flag.String("ports", "", "extra ports to check, comma separated")
+	ignore := flag.String("ignore", "", "ports whose RED is known and accepted, comma separated; still shown, not counted in the exit code")
 	asJSON := flag.Bool("json", false, "output JSON")
 	flag.Parse()
 
@@ -46,21 +48,21 @@ func main() {
 	for _, p := range ports {
 		seen[p] = true
 	}
-	for _, p := range strings.Split(*extra, ",") {
-		if p = strings.TrimSpace(p); p != "" {
-			n, err := strconv.Atoi(p)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "bad port %q\n", p)
-				os.Exit(2)
-			}
-			if !seen[n] {
-				seen[n] = true
-				ports = append(ports, n)
-			}
+	for _, n := range parsePorts(*extra) {
+		if !seen[n] {
+			seen[n] = true
+			ports = append(ports, n)
 		}
+	}
+	ignored := map[int]bool{}
+	for _, n := range parsePorts(*ignore) {
+		ignored[n] = true
 	}
 
 	results := audit(ports, localAddrs())
+	for i := range results {
+		results[i].Ignored = ignored[results[i].Port]
+	}
 
 	if *asJSON {
 		json.NewEncoder(os.Stdout).Encode(results)
@@ -68,10 +70,25 @@ func main() {
 		printTable(results)
 	}
 	for _, r := range results {
-		if r.Red {
+		if r.Red && !r.Ignored {
 			os.Exit(1)
 		}
 	}
+}
+
+func parsePorts(list string) []int {
+	var out []int
+	for _, p := range strings.Split(list, ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			n, err := strconv.Atoi(p)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "bad port %q\n", p)
+				os.Exit(2)
+			}
+			out = append(out, n)
+		}
+	}
+	return out
 }
 
 // localAddrs returns loopback first, then every unicast address on the host.
@@ -237,6 +254,9 @@ func printTable(results []Result) {
 		}
 		if r.Red {
 			verdict = "RED"
+		}
+		if r.Ignored {
+			verdict += " (ignored)"
 		}
 		rows = append(rows, []string{strconv.Itoa(r.Port), r.Service, listen, r.Rebind, r.Auth, verdict})
 	}
