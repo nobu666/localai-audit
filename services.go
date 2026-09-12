@@ -7,27 +7,27 @@ type Service struct {
 	Name  string
 	Ports []int
 	Path  string
+	Sig   Signature // optional: how to confirm this is really that service
 }
 
-// ponytail: identification is by port only; same-port services are
-// listed as candidates. Body-based fingerprinting when real responses
-// are collected.
+// Identification is by port, then confirmed by Signature where one is
+// known. Same-port services without a match stay listed as candidates.
 var services = []Service{
-	{"Ollama", []int{11434}, "/api/tags"},
-	{"LM Studio", []int{1234}, "/v1/models"},
-	{"llama.cpp", []int{8080}, "/v1/models"},
-	{"LocalAI", []int{8080}, "/v1/models"},
-	{"vLLM", []int{8000}, "/v1/models"},
-	{"Jan", []int{1337}, "/v1/models"},
-	{"text-generation-webui", []int{5000}, "/v1/models"},
-	{"KoboldCpp", []int{5001}, "/api/v1/model"},
-	{"Open WebUI", []int{8080, 3000}, "/api/v1/auths/"},
-	{"ComfyUI", []int{8188}, "/system_stats"},
-	{"SD WebUI (A1111)", []int{7860}, "/sdapi/v1/options"},
-	{"Jupyter", []int{8888}, "/api/status"},
-	{"Chroma", []int{8000}, "/api/v2/heartbeat"},
-	{"Qdrant", []int{6333}, "/collections"},
-	{"Weaviate", []int{8080}, "/v1/.well-known/ready"},
+	{"Ollama", []int{11434}, "/api/tags", Signature{"/api/tags", `"models"`}},
+	{"LM Studio", []int{1234}, "/v1/models", Signature{}}, // /api/v0/models exists, but its body shape is not documented; no marker
+	{"llama.cpp", []int{8080}, "/v1/models", Signature{"/props", "default_generation_settings"}},
+	{"LocalAI", []int{8080}, "/v1/models", Signature{}},
+	{"vLLM", []int{8000}, "/v1/models", Signature{}},
+	{"Jan", []int{1337}, "/v1/models", Signature{}},
+	{"text-generation-webui", []int{5000}, "/v1/models", Signature{}},
+	{"KoboldCpp", []int{5001}, "/api/v1/model", Signature{"/api/extra/version", "KoboldCpp"}},
+	{"Open WebUI", []int{8080, 3000}, "/api/v1/auths/", Signature{}},
+	{"ComfyUI", []int{8188}, "/system_stats", Signature{"/system_stats", "comfyui_version"}},
+	{"SD WebUI (A1111)", []int{7860}, "/sdapi/v1/options", Signature{"/sdapi/v1/options", "sd_model_checkpoint"}},
+	{"Jupyter", []int{8888}, "/api/status", Signature{}},
+	{"Chroma", []int{8000}, "/api/v2/heartbeat", Signature{"/api/v2/heartbeat", "nanosecond heartbeat"}},
+	{"Qdrant", []int{6333}, "/collections", Signature{"/", "qdrant"}},
+	{"Weaviate", []int{8080}, "/v1/.well-known/ready", Signature{"/v1/meta", "grpcMaxMessageSize"}},
 }
 
 // candidates returns the services registered for a port.
