@@ -21,6 +21,12 @@ Exit code is `1` when any row is `RED`, so it works in a cron job or CI. Columns
 go install github.com/nobu666/localai-audit@latest
 ```
 
+With Homebrew:
+
+```
+brew install nobu666/tap/localai-audit
+```
+
 Or download a binary for macOS, Linux or Windows from [Releases](https://github.com/nobu666/localai-audit/releases).
 
 ## Flags
