@@ -13,3 +13,14 @@ checksum:
   name_template: checksums.txt
 changelog:
   use: github
+brews:
+  - repository:
+      owner: nobu666
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: https://github.com/nobu666/localai-audit
+    description: "Audit local AI services for all-interface binding and DNS-rebinding exposure"
+    license: MIT
+    test: |
+      system "#{bin}/localai-audit", "--help"
